@@ -1,0 +1,108 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project xmlns="http://maven.apache.org/POM/4.0.0"
+         xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 https://maven.apache.org/xsd/maven-4.0.0.xsd">
+    <modelVersion>4.0.0</modelVersion>
+
+    <parent>
+        <groupId>com.precise.test</groupId>
+        <artifactId>precise-test-platform</artifactId>
+        <version>0.1.0</version>
+        <relativePath>../pom.xml</relativePath>
+    </parent>
+
+    <artifactId>pt-web</artifactId>
+    <name>pt-web</name>
+    <description>Web 启动模块：启动类 / 全局配置 / 打包为可执行 jar</description>
+
+    <dependencies>
+        <!-- 内部模块 -->
+        <dependency>
+            <groupId>com.precise.test</groupId>
+            <artifactId>pt-common</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>com.precise.test</groupId>
+            <artifactId>pt-auth</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>com.precise.test</groupId>
+            <artifactId>pt-repo</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>com.precise.test</groupId>
+            <artifactId>pt-analyze</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>com.precise.test</groupId>
+            <artifactId>pt-casegen</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>com.precise.test</groupId>
+            <artifactId>pt-mapping</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>com.precise.test</groupId>
+            <artifactId>pt-task</artifactId>
+        </dependency>
+
+        <!-- Web -->
+        <dependency>
+            <groupId>org.springframework.boot</groupId>
+            <artifactId>spring-boot-starter-web</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>org.springframework.boot</groupId>
+            <artifactId>spring-boot-starter-validation</artifactId>
+        </dependency>
+        <!-- Redis -->
+        <dependency>
+            <groupId>org.springframework.boot</groupId>
+            <artifactId>spring-boot-starter-data-redis</artifactId>
+        </dependency>
+        <!-- MyBatis-Plus -->
+        <dependency>
+            <groupId>com.baomidou</groupId>
+            <artifactId>mybatis-plus-spring-boot3-starter</artifactId>
+        </dependency>
+        <!-- MySQL 驱动 -->
+        <dependency>
+            <groupId>com.mysql</groupId>
+            <artifactId>mysql-connector-j</artifactId>
+            <scope>runtime</scope>
+        </dependency>
+        <!-- SpringDoc OpenAPI（Swagger UI） -->
+        <dependency>
+            <groupId>org.springdoc</groupId>
+            <artifactId>springdoc-openapi-starter-webmvc-ui</artifactId>
+        </dependency>
+
+        <!-- 测试 -->
+        <dependency>
+            <groupId>org.springframework.boot</groupId>
+            <artifactId>spring-boot-starter-test</artifactId>
+            <scope>test</scope>
+        </dependency>
+    </dependencies>
+
+    <build>
+        <!-- 固定产物名，便于 Docker 镜像 COPY -->
+        <finalName>pt-web</finalName>
+        <plugins>
+            <plugin>
+                <groupId>org.springframework.boot</groupId>
+                <artifactId>spring-boot-maven-plugin</artifactId>
+                <configuration>
+                    <mainClass>com.precise.test.PreciseTestApplication</mainClass>
+                </configuration>
+                <executions>
+                    <execution>
+                        <goals>
+                            <goal>repackage</goal>
+                        </goals>
+                    </execution>
+                </executions>
+            </plugin>
+        </plugins>
+    </build>
+</project>

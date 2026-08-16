@@ -1,0 +1,33 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project xmlns="http://maven.apache.org/POM/4.0.0"
+         xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 https://maven.apache.org/xsd/maven-4.0.0.xsd">
+    <modelVersion>4.0.0</modelVersion>
+
+    <parent>
+        <groupId>com.precise.test</groupId>
+        <artifactId>precise-test-platform</artifactId>
+        <version>0.1.0</version>
+        <relativePath>../pom.xml</relativePath>
+    </parent>
+
+    <artifactId>pt-casegen</artifactId>
+    <name>pt-casegen</name>
+    <description>用例生成模块（占位）：测试用例实体 + Service 接口签名</description>
+
+    <dependencies>
+        <dependency>
+            <groupId>com.precise.test</groupId>
+            <artifactId>pt-common</artifactId>
+        </dependency>
+        <!-- M3：读取接口定义 Schema（paramSchemaJson）生成用例 -->
+        <dependency>
+            <groupId>com.precise.test</groupId>
+            <artifactId>pt-analyze</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>com.baomidou</groupId>
+            <artifactId>mybatis-plus-spring-boot3-starter</artifactId>
+        </dependency>
+    </dependencies>
+</project>

@@ -1,0 +1,47 @@
+server:
+  port: 8080
+
+spring:
+  application:
+    name: precise-test-platform
+  datasource:
+    driver-class-name: com.mysql.cj.jdbc.Driver
+    # 本地开发默认连 localhost；Docker 环境通过 SPRING_DATASOURCE_URL 环境变量覆盖为 mysql 服务名。
+    # 追加 useSSL=false&allowPublicKeyRetrieval=true：适配 MySQL 8 默认 caching_sha2_password 认证。
+    url: "${SPRING_DATASOURCE_URL:jdbc:mysql://localhost:3306/precise_test?useUnicode=true&characterEncoding=utf8&serverTimezone=Asia/Shanghai&useSSL=false&allowPublicKeyRetrieval=true}"
+    username: ${SPRING_DATASOURCE_USERNAME:root}
+    password: ${SPRING_DATASOURCE_PASSWORD:123456}
+  data:
+    redis:
+      host: ${SPRING_DATA_REDIS_HOST:localhost}
+      port: ${SPRING_DATA_REDIS_PORT:6379}
+      timeout: 5s
+  jackson:
+    date-format: yyyy-MM-dd HH:mm:ss
+    time-zone: Asia/Shanghai
+
+mybatis-plus:
+  configuration:
+    # 下划线转驼峰：git_url <-> gitUrl
+    map-underscore-to-camel-case: true
+    log-impl: org.apache.ibatis.logging.slf4j.Slf4jImpl
+  global-config:
+    banner: false
+    db-config:
+      id-type: auto
+
+springdoc:
+  api-docs:
+    path: /v3/api-docs
+  swagger-ui:
+    path: /swagger-ui.html
+
+precise:
+  jwt:
+    # HS256 要求密钥 >= 32 字节；生产环境务必通过 PRECISE_JWT_SECRET 覆盖
+    secret: ${PRECISE_JWT_SECRET:precise-test-platform-jwt-secret-please-change-in-production-0123456789abcdef}
+    expire-hours: 24
+
+logging:
+  level:
+    com.precise.test: INFO

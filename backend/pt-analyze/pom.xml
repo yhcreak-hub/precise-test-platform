@@ -1,0 +1,49 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project xmlns="http://maven.apache.org/POM/4.0.0"
+         xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 https://maven.apache.org/xsd/maven-4.0.0.xsd">
+    <modelVersion>4.0.0</modelVersion>
+
+    <parent>
+        <groupId>com.precise.test</groupId>
+        <artifactId>precise-test-platform</artifactId>
+        <version>0.1.0</version>
+        <relativePath>../pom.xml</relativePath>
+    </parent>
+
+    <artifactId>pt-analyze</artifactId>
+    <name>pt-analyze</name>
+    <description>接口识别模块（占位）：接口定义 / 代码单元实体 + Service 接口签名</description>
+
+    <dependencies>
+        <dependency>
+            <groupId>com.precise.test</groupId>
+            <artifactId>pt-common</artifactId>
+        </dependency>
+        <!-- 实体注解 @TableName / 分页 Page 依赖 -->
+        <dependency>
+            <groupId>com.baomidou</groupId>
+            <artifactId>mybatis-plus-spring-boot3-starter</artifactId>
+        </dependency>
+
+        <!-- JavaParser：静态代码分析核心（接口识别引擎；纯 jar，无传递依赖） -->
+        <dependency>
+            <groupId>com.github.javaparser</groupId>
+            <artifactId>javaparser-core</artifactId>
+            <version>3.25.10</version>
+        </dependency>
+
+        <!-- Jackson：参数/返回 Schema 序列化（版本由 spring-boot 父 POM 管理） -->
+        <dependency>
+            <groupId>com.fasterxml.jackson.core</groupId>
+            <artifactId>jackson-databind</artifactId>
+        </dependency>
+
+        <!-- 单元测试（JUnit 5，版本由 spring-boot 父 POM 管理） -->
+        <dependency>
+            <groupId>org.junit.jupiter</groupId>
+            <artifactId>junit-jupiter</artifactId>
+            <scope>test</scope>
+        </dependency>
+    </dependencies>
+</project>

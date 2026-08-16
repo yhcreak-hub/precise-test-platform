@@ -1,0 +1,22 @@
+# ============ IDE ============
+.idea/
+*.iml
+.vscode/
+.DS_Store
+
+# ============ Java / Maven ============
+backend/**/target/
+*.class
+
+# ============ Node / 前端 ============
+frontend/node_modules/
+frontend/dist/
+frontend/.npm-cache/
+
+# ============ 日志 ============
+logs/
+*.log
+
+# ============ 本地工具 ============
+backend/clean-settings.xml
+precise-test-repos/

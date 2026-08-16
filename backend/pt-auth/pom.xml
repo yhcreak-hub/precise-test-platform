@@ -1,0 +1,34 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project xmlns="http://maven.apache.org/POM/4.0.0"
+         xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 https://maven.apache.org/xsd/maven-4.0.0.xsd">
+    <modelVersion>4.0.0</modelVersion>
+
+    <parent>
+        <groupId>com.precise.test</groupId>
+        <artifactId>precise-test-platform</artifactId>
+        <version>0.1.0</version>
+        <relativePath>../pom.xml</relativePath>
+    </parent>
+
+    <artifactId>pt-auth</artifactId>
+    <name>pt-auth</name>
+    <description>认证模块：登录 / JWT 签发与校验 / 默认管理员初始化</description>
+
+    <dependencies>
+        <dependency>
+            <groupId>com.precise.test</groupId>
+            <artifactId>pt-common</artifactId>
+        </dependency>
+        <!-- MyBatis-Plus：读取 sys_user -->
+        <dependency>
+            <groupId>com.baomidou</groupId>
+            <artifactId>mybatis-plus-spring-boot3-starter</artifactId>
+        </dependency>
+        <!-- BCrypt 密码校验（显式声明，版本由父 pom 管理） -->
+        <dependency>
+            <groupId>org.springframework.security</groupId>
+            <artifactId>spring-security-crypto</artifactId>
+        </dependency>
+    </dependencies>
+</project>

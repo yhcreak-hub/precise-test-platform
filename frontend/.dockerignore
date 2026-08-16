@@ -1,0 +1,11 @@
+# 依赖与构建产物不入镜像
+node_modules
+dist
+
+# IDE / 系统文件
+.idea
+.vscode
+.DS_Store
+
+# 日志
+*.log

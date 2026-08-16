@@ -1,0 +1,48 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project xmlns="http://maven.apache.org/POM/4.0.0"
+         xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 https://maven.apache.org/xsd/maven-4.0.0.xsd">
+    <modelVersion>4.0.0</modelVersion>
+
+    <parent>
+        <groupId>com.precise.test</groupId>
+        <artifactId>precise-test-platform</artifactId>
+        <version>0.1.0</version>
+        <relativePath>../pom.xml</relativePath>
+    </parent>
+
+    <artifactId>pt-repo</artifactId>
+    <name>pt-repo</name>
+    <description>被测项目管理模块：项目 CRUD / 分页列表 / 流水线触发（占位）</description>
+
+    <dependencies>
+        <dependency>
+            <groupId>com.precise.test</groupId>
+            <artifactId>pt-common</artifactId>
+        </dependency>
+        <!-- M2：接入接口识别模块（触发扫描/查询接口清单） -->
+        <dependency>
+            <groupId>com.precise.test</groupId>
+            <artifactId>pt-analyze</artifactId>
+        </dependency>
+        <!-- M3：接入用例生成模块（空洞检测/用例生成/用例查询） -->
+        <dependency>
+            <groupId>com.precise.test</groupId>
+            <artifactId>pt-casegen</artifactId>
+        </dependency>
+        <!-- M4：接入用例-代码关联模块 -->
+        <dependency>
+            <groupId>com.precise.test</groupId>
+            <artifactId>pt-mapping</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>com.baomidou</groupId>
+            <artifactId>mybatis-plus-spring-boot3-starter</artifactId>
+        </dependency>
+        <!-- 请求参数校验 -->
+        <dependency>
+            <groupId>org.springframework.boot</groupId>
+            <artifactId>spring-boot-starter-validation</artifactId>
+        </dependency>
+    </dependencies>
+</project>

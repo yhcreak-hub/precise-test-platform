@@ -1,0 +1,13 @@
+# Maven 构建产物不入镜像
+target
+**/target
+
+# IDE / 系统文件
+.idea
+*.iml
+.vscode
+.DS_Store
+
+# 日志
+logs
+*.log

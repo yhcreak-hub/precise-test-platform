@@ -1,0 +1,135 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project xmlns="http://maven.apache.org/POM/4.0.0"
+         xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 https://maven.apache.org/xsd/maven-4.0.0.xsd">
+    <modelVersion>4.0.0</modelVersion>
+
+    <!-- 父工程：Spring Boot 3.2.x，统一管理依赖版本 -->
+    <parent>
+        <groupId>org.springframework.boot</groupId>
+        <artifactId>spring-boot-starter-parent</artifactId>
+        <version>3.2.5</version>
+        <relativePath/>
+    </parent>
+
+    <groupId>com.precise.test</groupId>
+    <artifactId>precise-test-platform</artifactId>
+    <version>0.1.0</version>
+    <packaging>pom</packaging>
+    <name>precise-test-platform</name>
+    <description>精准测试平台（M1 骨架）：自动识别接口 → 自动生成用例 → 建立用例与代码关联</description>
+
+    <modules>
+        <module>pt-common</module>
+        <module>pt-auth</module>
+        <module>pt-repo</module>
+        <module>pt-analyze</module>
+        <module>pt-casegen</module>
+        <module>pt-mapping</module>
+        <module>pt-task</module>
+        <module>pt-web</module>
+    </modules>
+
+    <properties>
+        <java.version>17</java.version>
+        <maven.compiler.source>17</maven.compiler.source>
+        <maven.compiler.target>17</maven.compiler.target>
+        <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
+
+        <!--
+          三方依赖版本说明（已验证兼容性，无需联网执行 mvn 即可保证代码正确性）：
+          - mybatis-plus 3.5.5：需使用 mybatis-plus-spring-boot3-starter 适配 Spring Boot 3
+          - jjwt 0.12.5：新版链式 API（Jwts.builder().subject(...) / parser().verifyWith(...)）
+          - springdoc 2.3.0：官方适配 Spring Boot 3.2.x
+        -->
+        <mybatis-plus.version>3.5.5</mybatis-plus.version>
+        <jjwt.version>0.12.5</jjwt.version>
+        <springdoc.version>2.3.0</springdoc.version>
+    </properties>
+
+    <dependencyManagement>
+        <dependencies>
+            <!-- ============ 内部模块 ============ -->
+            <dependency>
+                <groupId>com.precise.test</groupId>
+                <artifactId>pt-common</artifactId>
+                <version>${project.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>com.precise.test</groupId>
+                <artifactId>pt-auth</artifactId>
+                <version>${project.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>com.precise.test</groupId>
+                <artifactId>pt-repo</artifactId>
+                <version>${project.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>com.precise.test</groupId>
+                <artifactId>pt-analyze</artifactId>
+                <version>${project.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>com.precise.test</groupId>
+                <artifactId>pt-casegen</artifactId>
+                <version>${project.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>com.precise.test</groupId>
+                <artifactId>pt-mapping</artifactId>
+                <version>${project.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>com.precise.test</groupId>
+                <artifactId>pt-task</artifactId>
+                <version>${project.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>com.precise.test</groupId>
+                <artifactId>pt-web</artifactId>
+                <version>${project.version}</version>
+            </dependency>
+
+            <!-- ============ MyBatis-Plus（Spring Boot 3 专用 starter） ============ -->
+            <dependency>
+                <groupId>com.baomidou</groupId>
+                <artifactId>mybatis-plus-spring-boot3-starter</artifactId>
+                <version>${mybatis-plus.version}</version>
+            </dependency>
+
+            <!-- ============ JWT (jjwt 0.12.x) ============ -->
+            <dependency>
+                <groupId>io.jsonwebtoken</groupId>
+                <artifactId>jjwt-api</artifactId>
+                <version>${jjwt.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>io.jsonwebtoken</groupId>
+                <artifactId>jjwt-impl</artifactId>
+                <version>${jjwt.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>io.jsonwebtoken</groupId>
+                <artifactId>jjwt-jackson</artifactId>
+                <version>${jjwt.version}</version>
+            </dependency>
+
+            <!-- ============ SpringDoc OpenAPI ============ -->
+            <dependency>
+                <groupId>org.springdoc</groupId>
+                <artifactId>springdoc-openapi-starter-webmvc-ui</artifactId>
+                <version>${springdoc.version}</version>
+            </dependency>
+        </dependencies>
+    </dependencyManagement>
+
+    <dependencies>
+        <!-- Lombok：所有子模块统一提供（编译期，不进入产物） -->
+        <dependency>
+            <groupId>org.projectlombok</groupId>
+            <artifactId>lombok</artifactId>
+            <scope>provided</scope>
+        </dependency>
+    </dependencies>
+</project>

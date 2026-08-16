@@ -1,0 +1,78 @@
+# =====================================================================
+# 精准测试平台 M1 部署编排
+# 使用方式：docker compose up -d --build
+#   前端  -> http://localhost        (nginx，代理 /api 到 backend:8080)
+#   后端  -> http://localhost:8080   (Spring Boot，Swagger: /swagger-ui.html)
+#   MySQL -> localhost:3306          (root / 123456，库 precise_test)
+#   Redis -> localhost:6379
+# =====================================================================
+services:
+  mysql:
+    image: mysql:8.0
+    container_name: precise-test-mysql
+    restart: unless-stopped
+    environment:
+      MYSQL_ROOT_PASSWORD: "123456"
+      MYSQL_DATABASE: precise_test
+      TZ: Asia/Shanghai
+    command:
+      - --character-set-server=utf8mb4
+      - --collation-server=utf8mb4_unicode_ci
+    ports:
+      - "3306:3306"
+    volumes:
+      # 首次初始化时自动执行建表脚本
+      - ./sql/init.sql:/docker-entrypoint-initdb.d/init.sql:ro
+      - mysql-data:/var/lib/mysql
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "localhost"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+
+  redis:
+    image: redis:7
+    container_name: precise-test-redis
+    restart: unless-stopped
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis-data:/data
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+
+  backend:
+    build: ./backend
+    container_name: precise-test-backend
+    restart: unless-stopped
+    ports:
+      - "8080:8080"
+    environment:
+      # 容器内通过服务名访问 MySQL / Redis（application.yml 中支持环境变量覆盖）
+      SPRING_DATASOURCE_URL: "jdbc:mysql://mysql:3306/precise_test?useUnicode=true&characterEncoding=utf8&serverTimezone=Asia/Shanghai&useSSL=false&allowPublicKeyRetrieval=true"
+      SPRING_DATASOURCE_USERNAME: root
+      SPRING_DATASOURCE_PASSWORD: "123456"
+      SPRING_DATA_REDIS_HOST: redis
+      SPRING_DATA_REDIS_PORT: "6379"
+      PRECISE_JWT_SECRET: "precise-test-platform-jwt-secret-please-change-in-production-0123456789abcdef"
+    depends_on:
+      mysql:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+
+  frontend:
+    build: ./frontend
+    container_name: precise-test-frontend
+    restart: unless-stopped
+    ports:
+      - "80:80"
+    depends_on:
+      - backend
+
+volumes:
+  mysql-data:
+  redis-data:
