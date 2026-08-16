@@ -132,7 +132,8 @@
         <div v-if="currentDetail.errorMsg" class="error-msg">{{ currentDetail.errorMsg }}</div>
         <div class="section">
           <div class="section-label">请求入参</div>
-          <pre class="pre">{{ pretty(currentDetail.requestJson) }}</pre>
+          <pre v-if="requestText" class="pre">{{ requestText }}</pre>
+          <div v-else class="muted-text">（空请求体或无入参记录）</div>
         </div>
         <div class="section">
           <div class="section-label">断言明细</div>
@@ -218,6 +219,17 @@ const assertList = computed(() => {
   }
 })
 
+/** 请求入参展示文本：空/缺失返回空（模板显示占位） */
+const requestText = computed(() => {
+  const raw = currentDetail.value?.requestJson
+  if (!raw || raw === '{}') return ''
+  try {
+    return JSON.stringify(JSON.parse(raw), null, 2)
+  } catch {
+    return raw
+  }
+})
+
 function viewRowDetail(row: ExecRecordDetail): void {
   currentDetail.value = row
   rowDetailVisible.value = true
@@ -232,7 +244,7 @@ function sourceText(source: string): string {
 }
 
 function pretty(json: string | undefined): string {
-  if (!json) return '（无响应）'
+  if (json === undefined || json === null || json === '') return '（无）'
   try {
     return JSON.stringify(JSON.parse(json), null, 2)
   } catch {
@@ -325,5 +337,11 @@ onMounted(loadData)
   border-radius: 4px;
   max-height: 300px;
   overflow: auto;
+}
+
+.muted-text {
+  color: #c0c4cc;
+  font-size: 13px;
+  padding: 8px 0;
 }
 </style>
