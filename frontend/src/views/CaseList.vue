@@ -1,6 +1,6 @@
 <template>
   <div class="case-list">
-    <el-page-header :content="`用例管理 - ${projectName}`" @back="router.push('/projects')" />
+    <PageHeader :title="projectName" description="分组查看/编辑/手动新增/全量执行" back />
 
     <!-- 空洞检测卡片 -->
     <el-card class="gap-card">
@@ -228,6 +228,7 @@
 <script setup lang="ts">
 import { computed, onMounted, reactive, ref } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
+import PageHeader from '@/components/PageHeader.vue'
 import { ElMessage, ElMessageBox } from 'element-plus'
 import { MagicStick, Refresh, Connection, Plus, VideoPlay } from '@element-plus/icons-vue'
 import {

@@ -27,6 +27,8 @@ import com.precise.test.repo.dto.PipelineTriggerResponse;
 import com.precise.test.repo.dto.ProjectCreateRequest;
 import com.precise.test.repo.dto.ProjectImportResult;
 import com.precise.test.repo.dto.ProjectPageQuery;
+import com.precise.test.repo.dto.DashboardStats;
+import com.precise.test.repo.service.DashboardService;
 import com.precise.test.repo.entity.Project;
 import com.precise.test.repo.service.ProjectService;
 import lombok.RequiredArgsConstructor;
@@ -64,6 +66,7 @@ public class ProjectController {
     private final CodeUnitService codeUnitService;
     private final CaseCodeMappingService caseCodeMappingService;
     private final ChangeAnalysisService changeAnalysisService;
+    private final DashboardService dashboardService;
 
     /**
      * 新增项目
@@ -433,5 +436,13 @@ public class ProjectController {
         }
         return Result.success(changeAnalysisService.analyze(id, project.getGitUrl(),
                 request.getBaseVersion(), request.getNowVersion()));
+    }
+
+    /**
+     * 工作台统计摘要（项目/接口/用例/关联/执行记录 + 最近通过率）
+     */
+    @GetMapping("/stats/summary")
+    public Result<DashboardStats> dashboardStats() {
+        return Result.success(dashboardService.getSummary());
     }
 }

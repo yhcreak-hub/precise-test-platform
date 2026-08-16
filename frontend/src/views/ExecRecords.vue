@@ -1,6 +1,6 @@
 <template>
   <div class="exec-records">
-    <el-page-header :content="`执行记录 - ${projectName}`" @back="router.push('/projects')" />
+    <PageHeader :title="projectName" description="用例执行批次与详情报告" back />
 
     <el-card class="table-card">
       <template #header>
@@ -153,6 +153,7 @@
 <script setup lang="ts">
 import { computed, onMounted, ref } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
+import PageHeader from '@/components/PageHeader.vue'
 import { ElMessage } from 'element-plus'
 import { Refresh } from '@element-plus/icons-vue'
 import {

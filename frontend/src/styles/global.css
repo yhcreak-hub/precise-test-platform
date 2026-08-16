@@ -1,0 +1,85 @@
+/* ============ 精准测试平台 全局样式 ============ */
+
+/* 圆角与阴影基调 */
+:root {
+  --el-border-radius-base: 6px;
+  --el-border-radius-small: 4px;
+  --el-border-radius-round: 20px;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+html,
+body {
+  margin: 0;
+  padding: 0;
+  height: 100%;
+  font-family: 'Helvetica Neue', Helvetica, 'PingFang SC', 'Hiragino Sans GB',
+    'Microsoft YaHei', Arial, sans-serif;
+  -webkit-font-smoothing: antialiased;
+}
+
+/* 页面通用卡片 */
+.el-card {
+  border-radius: 8px;
+  border: none;
+  box-shadow: 0 1px 4px rgba(0, 21, 41, 0.08) !important;
+  margin-bottom: 16px;
+}
+
+.el-card__header {
+  font-weight: 600;
+  color: #303133;
+}
+
+/* 表格美化 */
+.el-table {
+  border-radius: 6px;
+  overflow: hidden;
+}
+
+.el-table th.el-table__cell {
+  background: #fafafa !important;
+  color: #606266;
+  font-weight: 600;
+}
+
+/* 滚动条 */
+::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+
+::-webkit-scrollbar-thumb {
+  background: #c0c4cc;
+  border-radius: 3px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: #909399;
+}
+
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+/* 等宽字体（JSON 展示） */
+.mono,
+.mono textarea,
+.mono .el-textarea__inner {
+  font-family: 'SFMono-Regular', Consolas, 'Liberation Mono', Menlo, monospace;
+}
+
+/* 分页 */
+.pagination {
+  display: flex;
+  justify-content: flex-end;
+  margin-top: 16px;
+}
+
+/* 空状态加一点间距 */
+.el-empty {
+  padding: 24px 0;
+}

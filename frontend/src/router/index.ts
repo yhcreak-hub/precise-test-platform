@@ -6,6 +6,12 @@ declare module 'vue-router' {
   interface RouteMeta {
     /** 页面标题 */
     title?: string
+    /** 菜单图标名（Element Plus 图标组件名） */
+    icon?: string
+    /** 是否显示在多标签页栏（默认 true） */
+    tag?: boolean
+    /** 是否顶层菜单项（侧边栏显示） */
+    menu?: boolean
   }
 }
 
@@ -14,7 +20,7 @@ const routes: RouteRecordRaw[] = [
     path: '/login',
     name: 'Login',
     component: () => import('@/views/Login.vue'),
-    meta: { title: '登录' }
+    meta: { title: '登录', tag: false }
   },
   {
     path: '/',
@@ -25,13 +31,13 @@ const routes: RouteRecordRaw[] = [
         path: 'dashboard',
         name: 'Dashboard',
         component: () => import('@/views/Dashboard.vue'),
-        meta: { title: '工作台' }
+        meta: { title: '工作台', icon: 'Odometer', menu: true }
       },
       {
         path: 'projects',
         name: 'Projects',
         component: () => import('@/views/ProjectList.vue'),
-        meta: { title: '项目管理' }
+        meta: { title: '项目管理', icon: 'List', menu: true }
       },
       {
         path: 'projects/:id/apis',

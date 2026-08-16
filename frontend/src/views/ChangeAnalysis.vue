@@ -1,6 +1,6 @@
 <template>
   <div class="change-analysis">
-    <el-page-header :content="`变更分析 - ${projectName}`" @back="router.push('/projects')" />
+    <PageHeader :title="projectName" description="代码变更影响面分析与精准回归" back />
 
     <el-card class="query-card">
       <el-form :inline="true" class="query-form">
@@ -158,6 +158,7 @@
 <script setup lang="ts">
 import { computed, onMounted, reactive, ref } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
+import PageHeader from '@/components/PageHeader.vue'
 import { ElMessage } from 'element-plus'
 import { Search, VideoPlay } from '@element-plus/icons-vue'
 import {

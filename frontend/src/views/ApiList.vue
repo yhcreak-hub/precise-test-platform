@@ -1,6 +1,6 @@
 <template>
   <div class="api-list">
-    <el-page-header :content="`接口管理 - ${projectName}`" @back="router.push('/projects')" />
+    <PageHeader :title="projectName" description="接口自动识别清单" back />
 
     <el-card class="table-card">
       <template #header>
@@ -60,6 +60,7 @@
 <script setup lang="ts">
 import { onMounted, ref } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
+import PageHeader from '@/components/PageHeader.vue'
 import { ElMessage } from 'element-plus'
 import { Refresh } from '@element-plus/icons-vue'
 import { getProjectApis, type ApiDefinition } from '@/api/definition'
