@@ -76,6 +76,27 @@ public class CaseCodeMappingServiceImpl implements CaseCodeMappingService {
     public int buildMappingForProject(Long projectId) {
         List<TestCase> cases = testCaseMapper.selectList(
                 new LambdaQueryWrapper<TestCase>().eq(TestCase::getProjectId, projectId));
+        return buildMappingForCases(projectId, cases);
+    }
+
+    /**
+     * 为指定接口下的用例建立「用例 → 接口 → 代码单元」映射
+     * <p>用于：新生成的用例即时建立关联，确保后续变更分析能反查到。</p>
+     *
+     * @param projectId       项目 ID
+     * @param apiDefinitionId 接口定义 ID
+     * @return 新建的关联数量
+     */
+    public int buildMappingForApi(Long projectId, Long apiDefinitionId) {
+        List<TestCase> cases = testCaseMapper.selectList(
+                new LambdaQueryWrapper<TestCase>()
+                        .eq(TestCase::getProjectId, projectId)
+                        .eq(TestCase::getApiDefinitionId, apiDefinitionId));
+        return buildMappingForCases(projectId, cases);
+    }
+
+    /** 为用例集合建立映射（共用逻辑，去重幂等） */
+    private int buildMappingForCases(Long projectId, List<TestCase> cases) {
         int total = 0;
         for (TestCase tc : cases) {
             ApiDefinition api = apiDefinitionMapper.selectById(tc.getApiDefinitionId());
@@ -93,7 +114,7 @@ public class CaseCodeMappingServiceImpl implements CaseCodeMappingService {
             }
             total += buildMapping(tc.getId(), unit.getId(), "direct", "static");
         }
-        log.info("项目 {} 用例-代码关联建立完成：新增 {} 条（共 {} 个用例）", projectId, total, cases.size());
+        log.info("用例-代码关联建立完成：处理 {} 个用例，新增 {} 条", cases.size(), total);
         return total;
     }
 }

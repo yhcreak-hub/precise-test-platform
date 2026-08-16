@@ -7,9 +7,13 @@ import com.precise.test.analyze.entity.CodeUnit;
 import com.precise.test.analyze.service.ApiDefinitionService;
 import com.precise.test.analyze.service.CodeUnitService;
 import com.precise.test.analyze.util.CodeFetcher;
+import com.precise.test.casegen.dto.BatchExecuteRequest;
+import com.precise.test.casegen.dto.CreateCaseRequest;
 import com.precise.test.casegen.dto.UpdateCaseRequest;
 import com.precise.test.casegen.engine.CaseExecutor;
+import com.precise.test.casegen.entity.ExecRecord;
 import com.precise.test.casegen.entity.TestCase;
+import com.precise.test.casegen.service.ExecRecordService;
 import com.precise.test.casegen.service.TestCaseService;
 import com.precise.test.common.api.Result;
 import com.precise.test.common.api.ResultCode;
@@ -21,6 +25,7 @@ import com.precise.test.mapping.service.CaseCodeMappingService;
 import com.precise.test.mapping.service.ChangeAnalysisService;
 import com.precise.test.repo.dto.PipelineTriggerResponse;
 import com.precise.test.repo.dto.ProjectCreateRequest;
+import com.precise.test.repo.dto.ProjectImportResult;
 import com.precise.test.repo.dto.ProjectPageQuery;
 import com.precise.test.repo.entity.Project;
 import com.precise.test.repo.service.ProjectService;
@@ -55,6 +60,7 @@ public class ProjectController {
     private final ProjectService projectService;
     private final ApiDefinitionService apiDefinitionService;
     private final TestCaseService testCaseService;
+    private final ExecRecordService execRecordService;
     private final CodeUnitService codeUnitService;
     private final CaseCodeMappingService caseCodeMappingService;
     private final ChangeAnalysisService changeAnalysisService;
@@ -173,6 +179,7 @@ public class ProjectController {
 
     /**
      * 为项目下所有空洞接口生成契约用例（M3，规则引擎）
+     * <p>生成后自动建立用例-代码关联，确保变更分析可反查。</p>
      *
      * @param id 项目 ID
      * @return 本次生成的用例数量
@@ -183,6 +190,30 @@ public class ProjectController {
             throw new BusinessException(ResultCode.PARAM_ERROR, "项目不存在");
         }
         Long count = (long) testCaseService.generateForProject(id);
+        if (count > 0) {
+            caseCodeMappingService.buildMappingForProject(id);
+        }
+        return Result.success(count);
+    }
+
+    /**
+     * 为单个接口生成契约用例（M5 增强：变更分析中无覆盖用例的接口可补用例）
+     * <p>生成后自动建立用例-代码关联，确保再次变更分析能反查到新用例。</p>
+     *
+     * @param id    项目 ID
+     * @param apiId 接口定义 ID
+     * @return 本次生成的用例数量
+     */
+    @PostMapping("/{id}/apis/{apiId}/generate-cases")
+    public Result<Long> generateCasesForApi(@PathVariable("id") Long id, @PathVariable("apiId") Long apiId) {
+        if (projectService.getById(id) == null) {
+            throw new BusinessException(ResultCode.PARAM_ERROR, "项目不存在");
+        }
+        Long count = testCaseService.generateCases(apiId, null);
+        // 生成后即时建立用例-代码关联（幂等），确保变更分析可反查
+        if (count > 0) {
+            caseCodeMappingService.buildMappingForApi(id, apiId);
+        }
         return Result.success(count);
     }
 
@@ -238,6 +269,29 @@ public class ProjectController {
     }
 
     /**
+     * 手动新增用例（M6）：source 固定为 manual
+     * <p>创建后自动建立用例-代码关联，重新生成用例时不会被覆盖（生成仅针对空洞接口）。</p>
+     *
+     * @param id      项目 ID
+     * @param request 用例内容（apiDefinitionId/title/requestJson/assertsJson/headersJson/scenarioType）
+     * @return 创建的用例
+     */
+    @PostMapping("/{id}/cases")
+    public Result<TestCase> createCase(@PathVariable("id") Long id,
+                                       @Validated @RequestBody CreateCaseRequest request) {
+        Project project = projectService.getById(id);
+        if (project == null) {
+            throw new BusinessException(ResultCode.PARAM_ERROR, "项目不存在");
+        }
+        TestCase created = testCaseService.createManualCase(id, request.getApiDefinitionId(),
+                request.getTitle(), request.getRequestJson(), request.getAssertsJson(),
+                request.getHeadersJson(), request.getScenarioType());
+        // 自动建立用例-代码关联（幂等），确保变更分析可反查
+        caseCodeMappingService.buildMappingForApi(id, request.getApiDefinitionId());
+        return Result.success(created);
+    }
+
+    /**
      * 手动执行用例（M4）：向被测服务发起真实 HTTP 请求并校验断言
      *
      * @param id 用例 ID
@@ -257,6 +311,57 @@ public class ProjectController {
             throw new BusinessException(ResultCode.PARAM_ERROR, "项目未配置被测服务地址(baseUrl)，无法执行");
         }
         return Result.success(testCaseService.executeCase(id, project.getBaseUrl()));
+    }
+
+    /**
+     * 批量执行用例并记录结果（M6：执行记录）
+     * <p>变更分析命中用例可批量执行，结果落库 exec_record 供查看报告。</p>
+     *
+     * @param id      项目 ID
+     * @param request caseIds + source（manual/change_analysis）+ 版本信息
+     * @return 批次执行记录（含统计）
+     */
+    @PostMapping("/{id}/execute-batch")
+    public Result<ExecRecord> executeBatch(@PathVariable("id") Long id,
+                                           @RequestBody BatchExecuteRequest request) {
+        Project project = projectService.getById(id);
+        if (project == null) {
+            throw new BusinessException(ResultCode.PARAM_ERROR, "项目不存在");
+        }
+        if (request.getCaseIds() == null || request.getCaseIds().isEmpty()) {
+            throw new BusinessException(ResultCode.PARAM_ERROR, "请选择要执行的用例");
+        }
+        return Result.success(execRecordService.executeBatch(id, project.getBaseUrl(),
+                request.getCaseIds(), request.getSource(), request.getBaseVersion(), request.getNowVersion()));
+    }
+
+    /**
+     * 分页查询项目的执行记录（M6）
+     */
+    @GetMapping("/{id}/exec-records")
+    public Result<com.baomidou.mybatisplus.extension.plugins.pagination.Page<ExecRecord>> pageExecRecords(
+            @PathVariable("id") Long id,
+            @RequestParam(defaultValue = "1") int page,
+            @RequestParam(defaultValue = "20") int size) {
+        if (projectService.getById(id) == null) {
+            throw new BusinessException(ResultCode.PARAM_ERROR, "项目不存在");
+        }
+        return Result.success(execRecordService.pageByProject(id, page, size));
+    }
+
+    /**
+     * 查询执行记录明细（详情报告）
+     */
+    @GetMapping("/exec-records/{recordId}/detail")
+    public Result<Map<String, Object>> execRecordDetail(@PathVariable("recordId") Long recordId) {
+        ExecRecord record = execRecordService.getById(recordId);
+        if (record == null) {
+            throw new BusinessException(ResultCode.PARAM_ERROR, "执行记录不存在");
+        }
+        Map<String, Object> data = new java.util.HashMap<>();
+        data.put("record", record);
+        data.put("details", execRecordService.listDetail(recordId));
+        return Result.success(data);
     }
 
     /**

@@ -55,6 +55,42 @@ export function createProject(data: ProjectCreateParams): Promise<Project> {
   return http.post<Project>('/projects', data)
 }
 
+/** 项目导入结果（异步：立即返回，taskId 用于轮询进度） */
+export interface ProjectImportResult {
+  project: Project
+  taskId: number
+  message: string
+}
+
+/** 导入任务进度 */
+export interface ImportTaskStatus {
+  taskId: number
+  status: string
+  progress: number
+  finishedAt?: string
+  logUrl?: string
+}
+
+/** 项目导入（异步）：POST /api/projects/import */
+export function importProject(data: ProjectCreateParams): Promise<ProjectImportResult> {
+  return http.post<ProjectImportResult>('/projects/import', data)
+}
+
+/** 查询导入进度：GET /api/projects/import-status/{taskId} */
+export function getImportStatus(taskId: number): Promise<ImportTaskStatus> {
+  return http.get<ImportTaskStatus>(`/projects/import-status/${taskId}`)
+}
+
+/** 异步分析接口：POST /api/projects/{id}/analyze（返回 taskId） */
+export function analyzeProject(projectId: number): Promise<{ taskId: number; message: string }> {
+  return http.post<{ taskId: number; message: string }>(`/projects/${projectId}/analyze`)
+}
+
+/** 为项目生成用例：POST /api/projects/{id}/generate-cases */
+export function generateProjectCases(projectId: number): Promise<number> {
+  return http.post<number>(`/projects/${projectId}/generate-cases`)
+}
+
 /** 删除项目：DELETE /api/projects/{id} */
 export function deleteProject(id: number): Promise<void> {
   return http.delete<void>(`/projects/${id}`)

@@ -88,6 +88,27 @@ public class TestCaseServiceImpl implements TestCaseService {
     }
 
     @Override
+    public TestCase createManualCase(Long projectId, Long apiDefinitionId, String title,
+                                     String requestJson, String assertsJson, String headersJson, String scenarioType) {
+        TestCase tc = new TestCase();
+        tc.setProjectId(projectId);
+        tc.setApiDefinitionId(apiDefinitionId);
+        tc.setTitle(title == null || title.isBlank() ? "手动用例" : title);
+        tc.setRequestJson(requestJson == null || requestJson.isBlank() ? "{}" : requestJson);
+        tc.setAssertsJson(assertsJson == null || assertsJson.isBlank() ? "{\"body.code\":200}" : assertsJson);
+        tc.setHeadersJson(headersJson == null || headersJson.isBlank() ? null : headersJson);
+        // 手动用例：source 固定 manual，置信度 high，状态 active
+        tc.setScenarioType(scenarioType == null || scenarioType.isBlank() ? "normal" : scenarioType);
+        tc.setSource("manual");
+        tc.setConfidence("high");
+        tc.setStatus("active");
+        testCaseMapper.insert(tc);
+        log.info("手动新增用例: id={}, projectId={}, apiDefinitionId={}, title={}",
+                tc.getId(), projectId, apiDefinitionId, tc.getTitle());
+        return tc;
+    }
+
+    @Override
     public CaseExecutor.ExecuteResult executeCase(Long id, String baseUrl) {
         TestCase tc = testCaseMapper.selectById(id);
         if (tc == null) {

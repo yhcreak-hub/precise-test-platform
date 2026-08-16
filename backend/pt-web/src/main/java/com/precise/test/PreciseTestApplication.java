@@ -2,6 +2,7 @@ package com.precise.test;
 
 import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
+import org.springframework.scheduling.annotation.EnableAsync;
 
 /**
  * 精准测试平台启动类
@@ -10,6 +11,7 @@ import org.springframework.boot.autoconfigure.SpringBootApplication;
  * pt-common / pt-auth / pt-repo / pt-analyze / pt-casegen / pt-mapping / pt-task / pt-web。</p>
  */
 @SpringBootApplication(scanBasePackages = "com.precise.test")
+@EnableAsync
 public class PreciseTestApplication {
 
     public static void main(String[] args) {

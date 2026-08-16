@@ -52,6 +52,14 @@ export function updateCase(
   return http.put<TestCase>(`/projects/cases/${id}`, data)
 }
 
+/** 手动新增用例（source=manual）：POST /api/projects/{id}/cases */
+export function createCase(
+  projectId: number,
+  data: { apiDefinitionId: number; title: string; requestJson: string; assertsJson: string; headersJson?: string; scenarioType?: string }
+): Promise<TestCase> {
+  return http.post<TestCase>(`/projects/${projectId}/cases`, data)
+}
+
 /** 手动执行用例：POST /api/projects/cases/{id}/execute */
 export function executeCase(id: number): Promise<ExecuteResult> {
   return http.post<ExecuteResult>(`/projects/cases/${id}/execute`)
@@ -96,8 +104,15 @@ export interface ChangeAnalysisResult {
   nowVersion: string
   changedFileCount: number
   changedClasses: string[]
+  affectedControllerMethods: string[]
+  affectedApis: Record<string, ApiDefinition[]>
   matchedUnits: CodeUnit[]
   matchedCases: TestCase[]
+}
+
+/** 为单接口生成用例：POST /api/projects/{id}/apis/{apiId}/generate-cases */
+export function generateCasesForApi(projectId: number, apiId: number): Promise<number> {
+  return http.post<number>(`/projects/${projectId}/apis/${apiId}/generate-cases`)
 }
 
 /** 版本变更分析：POST /api/projects/{id}/analyze-change */
@@ -116,6 +131,55 @@ export interface ExecuteResult {
   status: 'PASS' | 'FAIL' | 'ERROR'
   errorMsg?: string
   costMs: number
+}
+
+/** 执行记录（批次） */
+export interface ExecRecord {
+  id: number
+  projectId: number
+  source: string
+  baseVersion?: string
+  nowVersion?: string
+  total: number
+  passed: number
+  failed: number
+  errorCount: number
+  costMs: number
+  createdAt: string
+}
+
+/** 执行记录明细 */
+export interface ExecRecordDetail {
+  id: number
+  execRecordId: number
+  testCaseId: number
+  caseTitle: string
+  apiPath: string
+  requestJson?: string
+  status: 'PASS' | 'FAIL' | 'ERROR'
+  httpStatus?: number
+  responseBody?: string
+  assertDetails?: string
+  errorMsg?: string
+  costMs: number
+}
+
+/** 批量执行用例：POST /api/projects/{id}/execute-batch */
+export function executeBatch(
+  projectId: number,
+  data: { caseIds: number[]; source: string; baseVersion?: string; nowVersion?: string }
+): Promise<ExecRecord> {
+  return http.post<ExecRecord>(`/projects/${projectId}/execute-batch`, data)
+}
+
+/** 分页查询执行记录：GET /api/projects/{id}/exec-records */
+export function pageExecRecords(projectId: number, page: number, size: number): Promise<PageResult<ExecRecord>> {
+  return http.get<PageResult<ExecRecord>>(`/projects/${projectId}/exec-records`, { page, size })
+}
+
+/** 查询执行记录详情：GET /api/projects/exec-records/{recordId}/detail */
+export function getExecRecordDetail(recordId: number): Promise<{ record: ExecRecord; details: ExecRecordDetail[] }> {
+  return http.get<{ record: ExecRecord; details: ExecRecordDetail[] }>(`/projects/exec-records/${recordId}/detail`)
 }
 
 /** 分页结果（与后端 Page 结构一致） */

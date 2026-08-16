@@ -37,4 +37,13 @@ public interface CaseCodeMappingService {
      * @return 新建的关联数量
      */
     int buildMappingForProject(Long projectId);
+
+    /**
+     * 为指定接口下的用例建立映射（M5 增强：新生成用例即时关联）
+     *
+     * @param projectId       项目 ID
+     * @param apiDefinitionId 接口定义 ID
+     * @return 新建的关联数量
+     */
+    int buildMappingForApi(Long projectId, Long apiDefinitionId);
 }

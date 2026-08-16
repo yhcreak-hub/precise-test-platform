@@ -2,12 +2,14 @@
 import { onMounted, reactive, ref } from 'vue'
 import { useRouter } from 'vue-router'
 import { ElMessage, ElMessageBox, type FormInstance, type FormRules } from 'element-plus'
-import { Delete, Plus, Refresh, VideoPlay } from '@element-plus/icons-vue'
+import { Delete, Plus, Refresh, VideoPlay, CircleCheck, CircleClose, Loading } from '@element-plus/icons-vue'
 import {
-  createProject,
+  importProject,
+  analyzeProject,
+  getImportStatus,
+  generateProjectCases,
   deleteProject,
   pageProjects,
-  triggerPipeline,
   type BuildType,
   type Project
 } from '@/api/project'
@@ -90,13 +92,85 @@ async function handleCreate(): Promise<void> {
 
   submitting.value = true
   try {
-    await createProject({ ...form })
-    ElMessage.success('项目创建成功')
+    const res = await importProject({ ...form })
     dialogVisible.value = false
     query.page = 1
     await loadData()
+    ElMessage.success(`项目「${res.project.name}」导入成功，点击「分析接口」开始接口识别`)
+  } catch (err) {
+    ElMessage.error('项目导入失败')
   } finally {
     submitting.value = false
+  }
+}
+
+// ---------------- 异步分析接口（项目列表按钮） ----------------
+const analyzingId = ref<number | null>(null)
+const analyzeProgress = ref(0)
+const analyzeVisible = ref(false)
+const analyzeStatus = ref('queued')
+let analyzeTimer: ReturnType<typeof setInterval> | null = null
+
+async function handleAnalyzeProject(row: Project): Promise<void> {
+  try {
+    const res = await analyzeProject(row.id)
+    analyzingId.value = row.id
+    analyzeVisible.value = true
+    analyzeProgress.value = 0
+    analyzeStatus.value = 'queued'
+    pollAnalyzeStatus(res.taskId)
+  } catch {
+    ElMessage.error('接口分析触发失败')
+  }
+}
+
+function pollAnalyzeStatus(taskId: number): void {
+  if (analyzeTimer) clearInterval(analyzeTimer)
+  analyzeTimer = setInterval(async () => {
+    try {
+      const s = await getImportStatus(taskId)
+      analyzeProgress.value = s.progress
+      analyzeStatus.value = s.status
+      if (s.status === 'success' || s.status === 'failed') {
+        if (analyzeTimer) clearInterval(analyzeTimer)
+        if (s.status === 'success') {
+          ElMessage.success('接口分析完成')
+          analyzeVisible.value = false
+          await loadData()
+        } else {
+          ElMessage.warning('接口分析失败')
+          analyzeVisible.value = false
+        }
+      }
+    } catch {
+      if (analyzeTimer) clearInterval(analyzeTimer)
+      analyzeVisible.value = false
+    }
+  }, 1000)
+}
+
+// ---------------- 生成用例（项目列表按钮） ----------------
+const generatingId = ref<number | null>(null)
+
+async function handleGenerateProject(row: Project): Promise<void> {
+  generatingId.value = row.id
+  try {
+    const count = await generateProjectCases(row.id)
+    ElMessage.success(`已生成 ${count} 条用例，可到用例管理查看`)
+  } catch {
+    ElMessage.error('用例生成失败（请先分析接口）')
+  } finally {
+    generatingId.value = null
+  }
+}
+
+function statusText(status: string): string {
+  switch (status) {
+    case 'queued': return '排队中...'
+    case 'running': return '分析执行中...'
+    case 'success': return '分析完成'
+    case 'failed': return '分析失败'
+    default: return status
   }
 }
 
@@ -115,17 +189,6 @@ async function handleDelete(row: Project): Promise<void> {
     await deleteProject(row.id)
     ElMessage.success('删除成功')
     await loadData()
-  } catch {
-    // 错误提示已由响应拦截器处理
-  }
-}
-
-// ---------------- 触发流水线（M2：真实扫描） ----------------
-async function handlePipeline(row: Project): Promise<void> {
-  try {
-    const res = await triggerPipeline(row.id)
-    ElMessage.success(`接口识别完成：新增 ${res.importedCount} 个，共 ${res.totalCount} 个`)
-    router.push({ name: 'ProjectApis', params: { id: row.id }, query: { name: row.name } })
   } catch {
     // 错误提示已由响应拦截器处理
   }
@@ -151,7 +214,7 @@ onMounted(loadData)
           <el-button type="primary" :icon="Refresh" @click="handleSearch">查询</el-button>
           <el-button @click="handleReset">重置</el-button>
         </div>
-        <el-button type="primary" :icon="Plus" @click="openDialog">新增项目</el-button>
+        <el-button type="primary" :icon="Plus" @click="openDialog">导入项目</el-button>
       </div>
     </el-card>
 
@@ -172,12 +235,26 @@ onMounted(loadData)
           </template>
         </el-table-column>
         <el-table-column prop="createdAt" label="创建时间" width="170" />
-        <el-table-column label="操作" width="500" fixed="right">
+        <el-table-column label="操作" width="640" fixed="right">
           <template #default="{ row }">
-            <el-button type="primary" link :icon="VideoPlay" @click="handlePipeline(row)">
-              触发流水线
+            <el-button
+              type="primary"
+              link
+              :icon="VideoPlay"
+              :loading="analyzingId === row.id"
+              @click="handleAnalyzeProject(row)"
+            >
+              分析接口
             </el-button>
-            <el-button type="success" link @click="router.push({ name: 'ProjectApis', params: { id: row.id }, query: { name: row.name } })">
+            <el-button
+              type="success"
+              link
+              :loading="generatingId === row.id"
+              @click="handleGenerateProject(row)"
+            >
+              生成用例
+            </el-button>
+            <el-button type="info" link @click="router.push({ name: 'ProjectApis', params: { id: row.id }, query: { name: row.name } })">
               查看接口
             </el-button>
             <el-button type="warning" link @click="router.push({ name: 'ProjectCases', params: { id: row.id }, query: { name: row.name } })">
@@ -185,6 +262,9 @@ onMounted(loadData)
             </el-button>
             <el-button type="danger" link @click="router.push({ name: 'ProjectChangeAnalysis', params: { id: row.id }, query: { name: row.name } })">
               变更分析
+            </el-button>
+            <el-button type="info" link @click="router.push({ name: 'ProjectExecRecords', params: { id: row.id }, query: { name: row.name } })">
+              执行记录
             </el-button>
             <el-button type="danger" link :icon="Delete" @click="handleDelete(row)">
               删除
@@ -208,7 +288,7 @@ onMounted(loadData)
     </el-card>
 
     <!-- 新增项目对话框 -->
-    <el-dialog v-model="dialogVisible" title="新增项目" width="520px" destroy-on-close>
+    <el-dialog v-model="dialogVisible" title="导入项目" width="560px" destroy-on-close>
       <el-form ref="formRef" :model="form" :rules="rules" label-width="110px">
         <el-form-item label="项目名称" prop="name">
           <el-input v-model="form.name" placeholder="如：order-service" />
@@ -228,16 +308,69 @@ onMounted(loadData)
         <el-form-item label="被测服务地址">
           <el-input v-model="form.baseUrl" placeholder="如：http://localhost:8899（执行用例用，可后补）" />
         </el-form-item>
+        <el-alert
+          type="info"
+          :closable="false"
+          show-icon
+          title="导入仅校验 Git 仓库可达；接口分析与用例生成请在项目列表手动触发"
+        />
       </el-form>
       <template #footer>
         <el-button @click="dialogVisible = false">取消</el-button>
         <el-button type="primary" :loading="submitting" @click="handleCreate">确定</el-button>
       </template>
     </el-dialog>
+
+    <!-- 接口分析进度弹窗 -->
+    <el-dialog v-model="analyzeVisible" title="接口分析中" width="420px" :close-on-click-modal="false" :close-on-press-escape="false" :show-close="false">
+      <div class="import-progress">
+        <div class="import-status">
+          <el-icon v-if="analyzeStatus === 'success'" class="is-success"><CircleCheck /></el-icon>
+          <el-icon v-else-if="analyzeStatus === 'failed'" class="is-error"><CircleClose /></el-icon>
+          <el-icon v-else class="is-loading"><Loading /></el-icon>
+          <span>{{ statusText(analyzeStatus) }}</span>
+        </div>
+        <el-progress :percentage="analyzeProgress" :status="analyzeStatus === 'success' ? 'success' : analyzeStatus === 'failed' ? 'exception' : undefined" />
+        <div class="import-tip">正在执行：拉取代码 → 扫描分析接口（大项目可能需要数分钟）</div>
+      </div>
+    </el-dialog>
   </div>
 </template>
 
 <style scoped>
+.import-progress {
+  padding: 8px 4px;
+}
+
+.import-status {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 16px;
+  font-size: 14px;
+  color: #606266;
+}
+
+.import-status .is-success {
+  color: #67c23a;
+  font-size: 20px;
+}
+
+.import-status .is-error {
+  color: #f56c6c;
+  font-size: 20px;
+}
+
+.import-status .is-loading {
+  color: #409eff;
+  font-size: 20px;
+}
+
+.import-tip {
+  margin-top: 12px;
+  font-size: 12px;
+  color: #909399;
+}
 .toolbar {
   margin-bottom: 16px;
 }

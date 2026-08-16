@@ -166,3 +166,42 @@ CREATE TABLE sys_user (
     status        VARCHAR(20)  NOT NULL DEFAULT 'active' COMMENT '状态',
     UNIQUE KEY uk_username (username)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci COMMENT='用户';
+
+-- ----------------------------------------------------------------------------
+-- 8. exec_record：用例执行记录（批次）
+--    记录批量执行（如变更分析后精准回归）的整体结果与统计
+-- ----------------------------------------------------------------------------
+CREATE TABLE exec_record (
+    id            BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+    project_id    BIGINT UNSIGNED NOT NULL COMMENT '项目 ID',
+    source        VARCHAR(20)     NOT NULL DEFAULT 'manual' COMMENT '触发来源：manual/change_analysis/all',
+    base_version  VARCHAR(100) COMMENT '基线版本（变更分析触发时）',
+    now_version   VARCHAR(100) COMMENT '当前版本（变更分析触发时）',
+    total         INT             NOT NULL DEFAULT 0 COMMENT '用例总数',
+    passed        INT             NOT NULL DEFAULT 0 COMMENT '通过数',
+    failed        INT             NOT NULL DEFAULT 0 COMMENT '失败数',
+    error_count   INT             NOT NULL DEFAULT 0 COMMENT '错误数',
+    cost_ms       BIGINT          NOT NULL DEFAULT 0 COMMENT '总耗时 ms',
+    created_at    DATETIME        NOT NULL DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
+    KEY idx_project (project_id)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci COMMENT='用例执行记录（批次）';
+
+-- ----------------------------------------------------------------------------
+-- 9. exec_record_detail：用例执行记录（明细）
+--    批次内每条用例的执行结果，支持查看详情报告
+-- ----------------------------------------------------------------------------
+CREATE TABLE exec_record_detail (
+    id              BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+    exec_record_id  BIGINT UNSIGNED NOT NULL COMMENT '执行记录 ID',
+    test_case_id    BIGINT UNSIGNED NOT NULL COMMENT '用例 ID',
+    case_title      VARCHAR(255) COMMENT '用例标题',
+    api_path        VARCHAR(255) COMMENT '接口路径',
+    request_json    TEXT COMMENT '请求入参 JSON',
+    status          VARCHAR(10)     NOT NULL COMMENT 'PASS/FAIL/ERROR',
+    http_status     INT COMMENT 'HTTP 状态码',
+    response_body   TEXT COMMENT '响应体',
+    assert_details  TEXT COMMENT '断言明细 JSON',
+    error_msg       VARCHAR(500) COMMENT '错误信息',
+    cost_ms         BIGINT          NOT NULL DEFAULT 0 COMMENT '耗时 ms',
+    KEY idx_record (exec_record_id)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci COMMENT='用例执行记录（明细）';

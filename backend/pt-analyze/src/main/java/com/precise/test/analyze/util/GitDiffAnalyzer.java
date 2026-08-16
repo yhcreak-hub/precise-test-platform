@@ -168,4 +168,77 @@ public final class GitDiffAnalyzer {
         }
         return path.replace('/', '.');
     }
+
+    /**
+     * 解析变更文件中的方法名（M5 增强）
+     * <p>用 git diff -U0 获取变更行号，再结合 JavaParser 定位变更行所属的方法。</p>
+     *
+     * @param repoRoot    仓库根目录（已切换到 nowVersion）
+     * @param changedFile 变更文件
+     * @param baseVersion 基线版本
+     * @param nowVersion  当前版本
+     * @return 变更的方法名集合（可能为空 = 无法精确定位）
+     */
+    public static List<String> resolveChangedMethods(Path repoRoot, ChangedFile changedFile,
+                                                    String baseVersion, String nowVersion) {
+        List<String> methods = new ArrayList<>();
+        // 删除的文件没有方法可查
+        if ("D".equals(changedFile.getChangeType())) {
+            return methods;
+        }
+        Path file = repoRoot.resolve(changedFile.getFilePath());
+        if (!Files.exists(file)) {
+            return methods;
+        }
+        try {
+            // 1. git diff -U0 获取 nowVersion 变更行号
+            String base = resolveRef(repoRoot, baseVersion);
+            String now = resolveRef(repoRoot, nowVersion);
+            ProcessBuilder pb = new ProcessBuilder("git", "diff", "-U0", base, now, "--", changedFile.getFilePath());
+            pb.directory(repoRoot.toFile());
+            pb.redirectErrorStream(true);
+            Process process = pb.start();
+            String diff = new String(process.getInputStream().readAllBytes());
+            process.waitFor();
+
+            // 解析 hunk 头 @@ -a,b +c,d @@，新增行号范围 [c, c+d-1]
+            java.util.Set<Integer> changedLines = new java.util.HashSet<>();
+            Pattern hunkPattern = Pattern.compile("@@ -\\d+(?:,\\d+)? \\+(\\d+)(?:,(\\d+))? @@");
+            Matcher hm = hunkPattern.matcher(diff);
+            while (hm.find()) {
+                int start = Integer.parseInt(hm.group(1));
+                int count = hm.group(2) != null ? Integer.parseInt(hm.group(2)) : 1;
+                for (int i = 0; i < count; i++) {
+                    changedLines.add(start + i);
+                }
+            }
+            if (changedLines.isEmpty()) {
+                return methods;
+            }
+
+            // 2. JavaParser 解析文件，找变更行所属的方法
+            String content = Files.readString(file, StandardCharsets.UTF_8);
+            com.github.javaparser.JavaParser parser = new com.github.javaparser.JavaParser();
+            var cuOpt = parser.parse(content).getResult();
+            if (cuOpt.isEmpty()) {
+                return methods;
+            }
+            var cu = cuOpt.get();
+            for (var type : cu.getTypes()) {
+                for (var method : type.getMethods()) {
+                    int begin = method.getBegin().map(p -> p.line).orElse(-1);
+                    int end = method.getEnd().map(p -> p.line).orElse(-1);
+                    for (int line : changedLines) {
+                        if (line >= begin && line <= end) {
+                            methods.add(method.getNameAsString());
+                            break;
+                        }
+                    }
+                }
+            }
+        } catch (Exception e) {
+            log.warn("解析变更方法失败: {}", changedFile.getFilePath(), e);
+        }
+        return methods.stream().distinct().toList();
+    }
 }

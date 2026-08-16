@@ -25,6 +25,15 @@
         <el-button type="warning" :loading="mappingBuilding" @click="handleBuildMapping">
           <el-icon><Connection /></el-icon>&nbsp;建立用例-代码关联
         </el-button>
+        <el-button type="success" :icon="Plus" @click="openCreateDialog">新增用例</el-button>
+        <el-button
+          type="danger"
+          :icon="VideoPlay"
+          :loading="runningAll"
+          @click="handleRunAllCases"
+        >
+          全量执行用例
+        </el-button>
       </div>
     </el-card>
 
@@ -92,6 +101,47 @@
         <el-empty v-if="!loading && groups.length === 0" description="暂无用例，请先点击上方按钮生成" />
       </div>
     </el-card>
+
+    <!-- 新增用例弹窗 -->
+    <el-dialog v-model="createVisible" title="手动新增用例（来源：手动）" width="65%">
+      <el-form label-width="90px">
+        <el-form-item label="所属接口" required>
+          <el-select v-model="createForm.apiDefinitionId" placeholder="选择接口" style="width: 100%">
+            <el-option
+              v-for="api in apis"
+              :key="api.id"
+              :label="`${api.httpMethod} ${api.apiPath}`"
+              :value="api.id"
+            />
+          </el-select>
+        </el-form-item>
+        <el-form-item label="场景类型">
+          <el-select v-model="createForm.scenarioType" style="width: 100%">
+            <el-option label="正常流程" value="normal" />
+            <el-option label="必填校验" value="required" />
+            <el-option label="边界值" value="boundary" />
+            <el-option label="异常输入" value="exception" />
+            <el-option label="业务场景" value="business" />
+          </el-select>
+        </el-form-item>
+        <el-form-item label="用例标题" required>
+          <el-input v-model="createForm.title" placeholder="如：查询用户列表-正常流程" />
+        </el-form-item>
+        <el-form-item label="请求参数">
+          <el-input v-model="createForm.requestJson" type="textarea" :rows="6" class="mono" placeholder='{"page":1,"size":10}' />
+        </el-form-item>
+        <el-form-item label="断言">
+          <el-input v-model="createForm.assertsJson" type="textarea" :rows="3" class="mono" placeholder='{"body.code":200}' />
+        </el-form-item>
+        <el-form-item label="请求头">
+          <el-input v-model="createForm.headersJson" type="textarea" :rows="2" class="mono" placeholder='如：{"token":"xxx"}（可选）' />
+        </el-form-item>
+      </el-form>
+      <template #footer>
+        <el-button @click="createVisible = false">取消</el-button>
+        <el-button type="primary" :loading="creating" @click="handleCreateCase">保存</el-button>
+      </template>
+    </el-dialog>
 
     <!-- 编辑弹窗 -->
     <el-dialog v-model="editVisible" :title="`编辑用例 #${editing?.id}`" width="65%">
@@ -178,11 +228,13 @@
 <script setup lang="ts">
 import { computed, onMounted, reactive, ref } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
-import { ElMessage } from 'element-plus'
-import { MagicStick, Refresh, Connection } from '@element-plus/icons-vue'
+import { ElMessage, ElMessageBox } from 'element-plus'
+import { MagicStick, Refresh, Connection, Plus, VideoPlay } from '@element-plus/icons-vue'
 import {
   buildMapping,
+  createCase,
   detectGap,
+  executeBatch,
   executeCase,
   generateCases,
   groupedCases,
@@ -236,6 +288,57 @@ const editVisible = ref(false)
 const editing = ref<TestCase | null>(null)
 const editForm = reactive({ title: '', requestJson: '', assertsJson: '', headersJson: '' })
 
+// ---------------- 手动新增用例 ----------------
+const createVisible = ref(false)
+const creating = ref(false)
+const createForm = reactive({
+  apiDefinitionId: undefined as number | undefined,
+  title: '',
+  requestJson: '',
+  assertsJson: '',
+  headersJson: '',
+  scenarioType: 'normal'
+})
+
+function openCreateDialog(): void {
+  createForm.apiDefinitionId = apis.value[0]?.id
+  createForm.title = ''
+  createForm.requestJson = ''
+  createForm.assertsJson = '{"body.code":200}'
+  createForm.headersJson = ''
+  createForm.scenarioType = 'normal'
+  createVisible.value = true
+}
+
+async function handleCreateCase(): Promise<void> {
+  if (!createForm.apiDefinitionId) {
+    ElMessage.warning('请选择所属接口')
+    return
+  }
+  if (!createForm.title) {
+    ElMessage.warning('请输入用例标题')
+    return
+  }
+  creating.value = true
+  try {
+    await createCase(projectId, {
+      apiDefinitionId: createForm.apiDefinitionId,
+      title: createForm.title,
+      requestJson: createForm.requestJson || '{}',
+      assertsJson: createForm.assertsJson || '{"body.code":200}',
+      headersJson: createForm.headersJson || undefined,
+      scenarioType: createForm.scenarioType
+    })
+    ElMessage.success('手动用例已创建（来源：手动），重新生成用例时不会被覆盖')
+    createVisible.value = false
+    await loadAll()
+  } catch {
+    ElMessage.error('创建失败')
+  } finally {
+    creating.value = false
+  }
+}
+
 function openEdit(row: TestCase): void {
   editing.value = row
   editForm.title = row.title
@@ -278,6 +381,47 @@ async function handleExecute(row: TestCase): Promise<void> {
     ElMessage.error('执行失败（请确认项目已配置被测服务地址 baseUrl）')
   } finally {
     executingId.value = null
+  }
+}
+
+// ---------------- 全量执行用例（生成执行记录） ----------------
+const runningAll = ref(false)
+
+async function handleRunAllCases(): Promise<void> {
+  // 收集项目下全部用例 id
+  const allIds: number[] = []
+  for (const list of Object.values(caseMap.value)) {
+    for (const tc of list) {
+      allIds.push(tc.id)
+    }
+  }
+  if (allIds.length === 0) {
+    ElMessage.warning('暂无用例可执行')
+    return
+  }
+  try {
+    await ElMessageBox.confirm(`将全量执行 ${allIds.length} 条用例并生成执行记录，确认继续？`, '全量执行', {
+      type: 'warning',
+      confirmButtonText: '执行',
+      cancelButtonText: '取消'
+    })
+  } catch {
+    return // 用户取消
+  }
+
+  runningAll.value = true
+  try {
+    const record = await executeBatch(projectId, {
+      caseIds: allIds,
+      source: 'all'
+    })
+    ElMessage.success(`全量执行完成：${record.passed}/${record.total} PASS（已生成执行记录）`)
+    // 提示可查看执行报告
+    await router.push({ name: 'ProjectExecRecords', params: { id: projectId }, query: { name: projectName } })
+  } catch {
+    ElMessage.error('全量执行失败（请确认项目已配置被测服务地址 baseUrl）')
+  } finally {
+    runningAll.value = false
   }
 }
 

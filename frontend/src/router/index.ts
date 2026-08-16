@@ -50,6 +50,12 @@ const routes: RouteRecordRaw[] = [
         name: 'ProjectChangeAnalysis',
         component: () => import('@/views/ChangeAnalysis.vue'),
         meta: { title: '变更分析' }
+      },
+      {
+        path: 'projects/:id/exec-records',
+        name: 'ProjectExecRecords',
+        component: () => import('@/views/ExecRecords.vue'),
+        meta: { title: '执行记录' }
       }
     ]
   },

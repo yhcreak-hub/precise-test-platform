@@ -26,6 +26,21 @@ public interface TestCaseService {
     /** 编辑用例（入参/断言/请求头/标题） */
     TestCase updateCase(Long id, String title, String requestJson, String assertsJson, String headersJson);
 
+    /**
+     * 手动新增用例（source 固定为 manual）
+     *
+     * @param projectId       项目 ID
+     * @param apiDefinitionId 所属接口定义 ID
+     * @param title           用例标题
+     * @param requestJson     请求参数 JSON
+     * @param assertsJson     断言 JSON
+     * @param headersJson     请求头 JSON（可空）
+     * @param scenarioType    场景类型（normal/required/boundary/exception/business）
+     * @return 创建的用例
+     */
+    TestCase createManualCase(Long projectId, Long apiDefinitionId, String title,
+                              String requestJson, String assertsJson, String headersJson, String scenarioType);
+
     /** 执行用例（真实 HTTP 请求 + 断言校验）；baseUrl 为被测服务地址，由调用方（项目模块）传入 */
     CaseExecutor.ExecuteResult executeCase(Long id, String baseUrl);
 
